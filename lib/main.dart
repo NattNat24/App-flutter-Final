@@ -1,11 +1,15 @@
+import 'package:endoser_app2/utils/auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:async';
 import 'diario_de_salud.dart';
 import 'foro_endoamigas.dart';
 import 'ley_endometriosis.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  Firebase.initializeApp();
   runApp(EndoSerApp());
 }
 
@@ -107,7 +111,7 @@ class _SplashScreenState extends State<SplashScreen> {
 class LoginScreen extends StatelessWidget {
   final TextEditingController _userController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-
+  final AuthService _auth = AuthService();
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -151,11 +155,20 @@ class LoginScreen extends StatelessWidget {
               ),
               SizedBox(height: 30),
               ElevatedButton(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => HomeScreen()),
-                  );
+                onPressed: () async{
+                  var result= await _auth.singInEmailAndPasword(_userController.text, _passwordController.text);
+                  if(result==1){
+                    print("usuario no found");
+                  }else if(result==2){
+                    print("contraseña incorrecta");
+                  }else if(result !=null){
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => HomeScreen()),
+                    );
+                  }
+
+
                 },
                 child: Text('ACCEDER'),
               ),
@@ -188,7 +201,7 @@ class LoginScreen extends StatelessWidget {
 class RegisterScreen extends StatelessWidget {
   final TextEditingController _newUserController = TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
-
+  final AuthService _auth = AuthService();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -226,11 +239,33 @@ class RegisterScreen extends StatelessWidget {
             ),
             SizedBox(height: 30),
             ElevatedButton(
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => HomeScreen()),
-                );
+              onPressed: ()async {
+                var result= await _auth.createAccount(_newUserController.text, _newPasswordController.text);
+                if(result==1){
+                  print("debil");
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('contraseña muy corta'),
+                      backgroundColor: Colors.red,
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                } else if (result==2){
+
+                  print("usuario ya existe");
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text('usuario ya existe'),
+                          backgroundColor: Colors.red,
+                          duration: Duration(seconds: 3),
+                      ),
+                  );
+                }else if (result !=null){
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => HomeScreen()),
+                  );
+                }
               },
               child: Text('Registrar'),
             ),
