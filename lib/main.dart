@@ -1,4 +1,5 @@
 import 'package:endoser_app2/utils/auth.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:async';
@@ -7,9 +8,10 @@ import 'foro_endoamigas.dart';
 import 'ley_endometriosis.dart';
 import 'package:firebase_core/firebase_core.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  Firebase.initializeApp();
+  await Firebase.initializeApp();
+  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
   runApp(EndoSerApp());
 }
 
