@@ -1,4 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:endoser_app2/utils/auth.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -164,6 +166,10 @@ class LoginScreen extends StatelessWidget {
                   }else if(result==2){
                     print("contraseña incorrecta");
                   }else if(result !=null){
+                    final user = FirebaseAuth.instance.currentUser;
+                    final userId = user!.uid;
+
+                    print('Usuario autenticado con UID: $userId');
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(builder: (_) => HomeScreen()),
@@ -200,10 +206,14 @@ class LoginScreen extends StatelessWidget {
   }
 }
 
+
+
 class RegisterScreen extends StatelessWidget {
+  final TextEditingController _nameController = TextEditingController(); // Nuevo campo para nombre
   final TextEditingController _newUserController = TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
   final AuthService _auth = AuthService();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -217,13 +227,25 @@ class RegisterScreen extends StatelessWidget {
           children: [
             Align(
               alignment: Alignment.centerLeft,
-              child: Text('Nombre de usuario', style: Theme.of(context).textTheme.labelMedium),
+              child: Text('Nombre', style: Theme.of(context).textTheme.labelMedium),
+            ),
+            SizedBox(height: 8),
+            TextField(
+              controller: _nameController,
+              decoration: InputDecoration(
+                hintText: 'Ingresa tu nombre',
+              ),
+            ),
+            SizedBox(height: 20),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text('Correo electrónico', style: Theme.of(context).textTheme.labelMedium),
             ),
             SizedBox(height: 8),
             TextField(
               controller: _newUserController,
               decoration: InputDecoration(
-                hintText: 'Ingresa tu usuario',
+                hintText: 'Ingresa tu correo',
               ),
             ),
             SizedBox(height: 20),
@@ -241,28 +263,36 @@ class RegisterScreen extends StatelessWidget {
             ),
             SizedBox(height: 30),
             ElevatedButton(
-              onPressed: ()async {
-                var result= await _auth.createAccount(_newUserController.text, _newPasswordController.text);
-                if(result==1){
-                  print("debil");
+              onPressed: () async {
+                // Primero, creamos el usuario en Firebase Auth
+                var result = await _auth.createAccount(_newUserController.text, _newPasswordController.text);
+
+                if (result == 1) {
+                  print("contraseña muy corta");
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('contraseña muy corta'),
+                      content: Text('Contraseña muy corta'),
                       backgroundColor: Colors.red,
                       duration: Duration(seconds: 3),
                     ),
                   );
-                } else if (result==2){
-
+                } else if (result == 2) {
                   print("usuario ya existe");
                   ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content: Text('usuario ya existe'),
-                          backgroundColor: Colors.red,
-                          duration: Duration(seconds: 3),
-                      ),
+                    SnackBar(
+                      content: Text('El usuario ya existe'),
+                      backgroundColor: Colors.red,
+                      duration: Duration(seconds: 3),
+                    ),
                   );
-                }else if (result !=null){
+                } else if (result != null) {
+                  // Si result es el UID, guardamos el nombre en Firestore
+                  await FirebaseFirestore.instance.collection('usuarios').doc(result).set({
+                    'nombre': _nameController.text,
+                    'uid': result,
+                  });
+
+                  print("Registro exitoso");
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (_) => HomeScreen()),
@@ -277,7 +307,6 @@ class RegisterScreen extends StatelessWidget {
     );
   }
 }
-
 class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
